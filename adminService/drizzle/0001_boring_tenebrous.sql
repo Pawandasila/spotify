@@ -1,0 +1,1 @@
+ALTER TABLE "songs" ADD COLUMN "thumbnail" varchar(255) NOT NULL;

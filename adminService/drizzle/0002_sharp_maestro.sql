@@ -1,0 +1,1 @@
+ALTER TABLE "songs" ALTER COLUMN "thumbnail" DROP NOT NULL;

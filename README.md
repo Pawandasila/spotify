@@ -1,32 +1,33 @@
 # 🎵 Spotify Clone - Microservice Platform
 
-A complete microservice-based music streaming platform built with modern technologies, featuring user management, content administration, and scalable architecture.
+A complete microservice-based music streaming platform built with modern technologies, featuring user management, content administration, music streaming, and scalable architecture with Redis caching.
 
 ## 🏗️ Architecture Overview
 
 This platform follows a **microservice architecture** with the following services:
 
 ```
-┌─────────────────┐    ┌─────────────────┐
-│   User Service  │    │  Admin Service  │
-│    (Port 3000)  │    │   (Port 7000)   │
-│                 │    │                 │
-│ • Authentication│    │ • Album CRUD    │
-│ • User Profile  │    │ • Song CRUD     │
-│ • Registration  │    │ • File Upload   │
-│ • JWT Auth      │    │ • Content Mgmt  │
-└─────────────────┘    └─────────────────┘
-         │                       │
-         └───────────┬───────────┘
-                     │
-         ┌─────────────────┐
-         │   Shared Tech   │
-         │                 │
-         │ • MongoDB       │
-         │ • PostgreSQL    │
-         │ • Cloudinary    │
-         │ • TypeScript    │
-         └─────────────────┘
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   User Service  │    │  Admin Service  │    │   Song Service  │
+│    (Port 3000)  │    │   (Port 7000)   │    │   (Port 8000)   │
+│                 │    │                 │    │                 │
+│ • Authentication│    │ • Album CRUD    │    │ • Music Streaming│
+│ • User Profile  │    │ • Song CRUD     │    │ • Album Browsing│
+│ • Registration  │    │ • File Upload   │    │ • Song Discovery│
+│ • JWT Auth      │    │ • Content Mgmt  │    │ • Play Analytics│
+│ • MongoDB       │    │ • Cache Inval.  │    │ • Redis Caching │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────┬───────────┴───────────┬───────────┘
+                     │                       │
+         ┌─────────────────┐    ┌─────────────────┐
+         │   Shared Tech   │    │  Redis Cluster  │
+         │                 │    │                 │
+         │ • PostgreSQL    │    │ • Song Cache    │
+         │ • Cloudinary    │    │ • Album Cache   │
+         │ • TypeScript    │    │ • Play Count    │
+         │ • JWT Auth      │    │ • Performance   │
+         └─────────────────┘    └─────────────────┘
 ```
 
 ## 🚀 Quick Start
@@ -35,6 +36,7 @@ This platform follows a **microservice architecture** with the following service
 - **Node.js** (v18+)
 - **MongoDB** (v6+)
 - **PostgreSQL** (v14+)
+- **Redis** (v6+)
 - **Cloudinary Account**
 
 ### Installation
@@ -45,7 +47,7 @@ This platform follows a **microservice architecture** with the following service
    cd Spotify
    ```
 
-2. **Install dependencies for both services:**
+2. **Install dependencies for all services:**
    ```bash
    # User Service
    cd userService
@@ -54,11 +56,15 @@ This platform follows a **microservice architecture** with the following service
    # Admin Service
    cd ../adminService
    npm install
+   
+   # Song Service
+   cd ../songService
+   npm install
    ```
 
 3. **Environment Setup:**
    
-   Create `.env` files in both service directories:
+   Create `.env` files in all service directories:
    
    **userService/.env:**
    ```env
@@ -77,12 +83,30 @@ This platform follows a **microservice architecture** with the following service
    CLOUDINARY_API_KEY=your_api_key
    CLOUDINARY_API_SECRET=your_api_secret
    USER_URL=http://localhost:3000
+   REDIS_HOST=localhost
+   REDIS_PORT=6379
+   REDIS_PASSWORD=your_redis_password
+   CACHE_EXPIRE=1800
+   ```
+   
+   **songService/.env:**
+   ```env
+   PORT=8000
+   NODE_ENV=development
+   DATABASE_URL=postgresql://username:password@localhost:5432/spotify_admin
+   REDIS_HOST=localhost
+   REDIS_PORT=6379
+   REDIS_PASSWORD=your_redis_password
+   CACHE_EXPIRE=1800
    ```
 
-4. **Database Setup:**
+4. **Database & Cache Setup:**
    ```bash
    # Start MongoDB
    mongod
+   
+   # Start Redis
+   redis-server
    
    # Setup PostgreSQL (Admin Service)
    cd adminService
@@ -97,6 +121,10 @@ This platform follows a **microservice architecture** with the following service
    
    # Terminal 2 - Admin Service
    cd adminService
+   npm run dev
+   
+   # Terminal 3 - Song Service
+   cd songService
    npm run dev
    ```
 
@@ -116,6 +144,18 @@ This platform follows a **microservice architecture** with the following service
 | `PATCH` | `/api/v1/admin/addSongThumbnail` | Add thumbnail to song |
 | `DELETE` | `/api/v1/admin/deleteSong/:songId` | Delete song |
 | `DELETE` | `/api/v1/admin/deleteAlbum/:albumId` | Delete album |
+| `PATCH` | `/api/v1/admin/song/:id/toggle-status` | Toggle song active status |
+| `PATCH` | `/api/v1/admin/song/:id/activate` | Activate song |
+| `PATCH` | `/api/v1/admin/song/:id/deactivate` | Deactivate song |
+
+### Song Service (Port 8000) - **Read Only**
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/v1/songs/albums` | Get all albums (cached) |
+| `GET` | `/api/v1/songs/albums/:albumId/songs` | Get songs by album (cached) |
+| `GET` | `/api/v1/songs/songs` | Get all songs (cached) |
+| `GET` | `/api/v1/songs/songs/:id` | Get specific song (cached) |
+| `PATCH` | `/api/v1/songs/songs/:id/play-count` | Increment play count |
 
 ## 🛠️ Technology Stack
 
@@ -125,14 +165,18 @@ This platform follows a **microservice architecture** with the following service
 - **Validation:** Zod schemas
 - **File Upload:** Multer + Cloudinary
 - **Error Handling:** Custom middleware
+- **Caching:** Redis with intelligent TTL strategies
 
 ### Databases
 - **User Service:** MongoDB with Mongoose
 - **Admin Service:** PostgreSQL with Drizzle ORM
+- **Song Service:** PostgreSQL with Drizzle ORM (Read-only)
 
-### Cloud Services
+### Cloud Services & Infrastructure
 - **File Storage:** Cloudinary (images/audio)
 - **Database:** Neon (PostgreSQL)
+- **Caching:** Redis (Local/Cloud)
+- **Performance:** Multi-tiered caching strategy
 
 ## 📁 Project Structure
 
@@ -155,10 +199,21 @@ Spotify/
 │   │   ├── middlewares/   # Auth, validation
 │   │   ├── services/      # Business logic
 │   │   ├── utils/         # Helper functions
-│   │   └── validators/    # Zod schemas
+│   │   ├── validators/    # Zod schemas
+│   │   └── config/        # Redis, DB config
 │   ├── drizzle/           # Database migrations
 │   ├── package.json
 │   └── README.md
+└── songService/            # Music streaming service
+    ├── src/
+    │   ├── controllers/    # Request handlers
+    │   ├── db/            # Drizzle schema
+    │   ├── middlewares/   # Error handling
+    │   ├── routes/        # API routes
+    │   ├── config/        # Redis, DB config
+    │   └── utils/         # Helper functions
+    ├── package.json
+    └── README.md
 ```
 
 ## 🔧 Development Workflow
@@ -220,17 +275,37 @@ sequenceDiagram
 - ✅ Profile management
 - ✅ Role-based access control
 
-### Content Management
+### Content Management (Admin Service)
 - ✅ Album creation with thumbnails
 - ✅ Song upload (audio files)
 - ✅ Separate thumbnail upload for songs
 - ✅ CRUD operations for albums/songs
+- ✅ Song activation/deactivation
 - ✅ File storage with Cloudinary
+- ✅ Cache invalidation on data changes
+
+### Music Streaming (Song Service)
+- ✅ Album browsing with caching
+- ✅ Song discovery and search
+- ✅ Play count analytics
+- ✅ Performance-optimized with Redis
+- ✅ Read-only architecture for scalability
+
+### Caching & Performance
+- ✅ **Multi-tiered caching strategy**
+- ✅ **Intelligent TTL management**:
+  - Albums: 30 minutes (static content)
+  - Songs: 15 minutes (moderate changes)
+  - Songs by Album: 10 minutes (relationship data)
+  - Individual Songs: 5 minutes (dynamic content)
+- ✅ **Cache invalidation** on Admin operations
+- ✅ **Graceful degradation** if Redis fails
 
 ### Data Architecture
 - ✅ Songs can exist without albums (singles)
 - ✅ Albums maintain referential integrity
 - ✅ Soft relationship management
+- ✅ Cross-service data consistency
 
 ## 🚧 Roadmap
 
@@ -238,18 +313,22 @@ sequenceDiagram
 - [x] Basic user registration
 - [x] Admin content management
 - [x] File upload functionality
+- [x] Song streaming service
+- [x] Redis caching implementation
+- [x] Cache invalidation system
 
 ### Phase 2 (Planned)
 - [ ] User playlists
-- [ ] Song streaming endpoints
-- [ ] Search functionality
-- [ ] User favorites
+- [ ] Advanced search functionality
+- [ ] User favorites & history
+- [ ] Song recommendations
 
 ### Phase 3 (Future)
 - [ ] Real-time features (WebSocket)
-- [ ] Recommendation engine
-- [ ] Social features
+- [ ] Advanced analytics dashboard
+- [ ] Social features & sharing
 - [ ] Mobile app support
+- [ ] CDN integration
 
 ## 🤝 Contributing
 

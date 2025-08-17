@@ -4,6 +4,7 @@ import { HTTPSTATUS } from "../config/Https.config.js";
 import { albumSchema } from "../validator/album.validator.js";
 import cloudinary from "../config/clodinary.js";
 import { addAlbumService } from "../services/Album.service.js";
+import { cacheHelper } from "../config/redis.config.js";
 
 export const addAlbum = AsyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -40,6 +41,10 @@ export const addAlbum = AsyncHandler(
       };
 
       const result = await addAlbumService(data);
+
+      // Invalidate album-related caches
+      await cacheHelper.del("albums:all");
+      console.log("🗑️ Invalidated albums cache after adding new album");
 
       return res.status(HTTPSTATUS.CREATED).json({
         message: "Album added successfully",

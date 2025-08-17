@@ -3,6 +3,7 @@ import { AsyncHandler } from "../middlewares/AsyncHandler.middleware.js";
 import { HTTPSTATUS } from "../config/Https.config.js";
 import { deleteSongService } from "../services/song.service.js";
 import { deleteAlbumService } from "../services/Album.service.js";
+import { cacheHelper } from "../config/redis.config.js";
 
 export const deleteSong = AsyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -19,6 +20,21 @@ export const deleteSong = AsyncHandler(
       }
 
       await deleteSongService(parsedSongId);
+
+      // Invalidate song-related caches
+      const cacheKeysToInvalidate = [
+        `song:${parsedSongId}`,
+        "songs:all"
+      ];
+      
+      // Use pattern to invalidate all album:*:songs caches since we don't know which album
+      await cacheHelper.delPattern("album:*:songs");
+      
+      for (const key of cacheKeysToInvalidate) {
+        await cacheHelper.del(key);
+      }
+      console.log("🗑️ Invalidated song caches after deletion");
+
       return res.status(HTTPSTATUS.OK).json({
         message: "Song deleted successfully"
       });
@@ -47,6 +63,19 @@ export const deleteAlbum = AsyncHandler(
             }
 
             const deletedAlbum = await deleteAlbumService(parsedAlbumId);
+
+            // Invalidate album and song-related caches
+            const cacheKeysToInvalidate = [
+                "albums:all",
+                `album:${parsedAlbumId}:songs`,
+                "songs:all"
+            ];
+            
+            for (const key of cacheKeysToInvalidate) {
+                await cacheHelper.del(key);
+            }
+            console.log("🗑️ Invalidated album and song caches after album deletion");
+
             return res.status(HTTPSTATUS.OK).json({
                 message: "Album deleted successfully. Associated songs now have no album.",
                 deletedAlbum: deletedAlbum

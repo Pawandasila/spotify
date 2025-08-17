@@ -4,6 +4,7 @@ import { HTTPSTATUS } from "../config/Https.config.js";
 import cloudinary from "../config/clodinary.js";
 import { updateSongThumbnailService } from "../services/song.service.js";
 import { z } from "zod";
+import { cacheHelper } from "../config/redis.config.js";
 
 // Validation schema for thumbnail update
 const thumbnailSchema = z.object({
@@ -43,6 +44,22 @@ export const addSongThumbnail = AsyncHandler(
       });
 
       const result = await updateSongThumbnailService(parseInt(songId), cloudData.secure_url);
+
+      // Invalidate song-related caches
+      const cacheKeysToInvalidate = [
+        `song:${songId}`,
+        "songs:all"
+      ];
+      
+      // Also invalidate album:songs cache if song has albumId
+      if (result.albumId) {
+        cacheKeysToInvalidate.push(`album:${result.albumId}:songs`);
+      }
+      
+      for (const key of cacheKeysToInvalidate) {
+        await cacheHelper.del(key);
+      }
+      console.log("🗑️ Invalidated song caches after updating thumbnail");
 
       return res.status(HTTPSTATUS.OK).json({
         message: "Song thumbnail updated successfully",

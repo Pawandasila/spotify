@@ -1,5 +1,6 @@
 import getEnv from "../utils/getEnv.util.js";
 
+
 const envConfig = () => ({
   NODE_ENV: getEnv("NODE_ENV", "development"),
 
@@ -13,18 +14,10 @@ const envConfig = () => ({
   REDIS_PORT: getEnv("REDIS_PORT", "6379"),
   REDIS_PASSWORD: getEnv("REDIS_PASSWORD", "your_redis_password"),
   CACHE_EXPIRE: getEnv("CACHE_EXPIRE", "1800"),
-
-  //   JWT_REFRESH_SECRET: getEnv("JWT_REFRESH_SECRET", "secert_jwt_refresh"),
-  //   JWT_REFRESH_EXPIRES_IN: getEnv("JWT_REFRESH_EXPIRES_IN", "7d") as string,
-
-  //   GEMINI_API_KEY: getEnv("GEMINI_API_KEY"),
-
-  CLOUDINARY_CLOUD_NAME: getEnv("CLOUDINARY_CLOUD_NAME"),
-  CLOUDINARY_API_KEY: getEnv("CLOUDINARY_API_KEY"),
-  CLOUDINARY_API_SECRET: getEnv("CLOUDINARY_API_SECRET"),
-
+  
   FRONTEND_ORIGIN: getEnv("FRONTEND_ORIGIN", "http://localhost:3000"),
   USER_URL: getEnv("USER_URL", "http://localhost:8000"),
+  ADMIN_URL: getEnv("ADMIN_URL", "http://localhost:7000"),
 });
 
 export const Env = envConfig();

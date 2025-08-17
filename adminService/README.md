@@ -1,6 +1,6 @@
-# 🎵 Admin Service - Spotify Clone
+# �️ Admin Service - Content Management
 
-The **Admin Service** handles all content management operations including album creation, song uploads, file management, and administrative functions in the Spotify Clone microservice platform.
+The **Admin Service** handles all content management operations including album creation, song uploads, file management, and administrative functions in the Spotify Clone microservice platform with Redis-based cache invalidation.
 
 ## 🎯 Service Overview
 
@@ -8,6 +8,9 @@ This service is responsible for:
 - Album creation and management (CRUD)
 - Song upload and management (audio files)
 - Thumbnail management (separate from audio)
+- Song activation/deactivation control
+- Cache invalidation for Song Service
+- File storage via Cloudinary integration
 - File storage integration with Cloudinary
 - PostgreSQL-based content data storage
 - Admin authentication via User Service
@@ -46,6 +49,12 @@ This service is responsible for:
    CLOUDINARY_CLOUD_NAME=your_cloud_name
    CLOUDINARY_API_KEY=your_api_key
    CLOUDINARY_API_SECRET=your_api_secret
+   
+   # Redis (Cache Management)
+   REDIS_HOST=localhost
+   REDIS_PORT=6379
+   REDIS_PASSWORD=your_redis_password
+   CACHE_EXPIRE=1800
    
    # User Service Integration
    USER_URL=http://localhost:3000
@@ -337,6 +346,13 @@ const authMiddleware = bypassAuth; // For development
 - **File Storage:** Cloudinary
 - **File Upload:** Multer
 - **Validation:** Zod schemas
+- **Caching:** Redis (cache invalidation)
+
+### Performance & Scalability
+- **Cache Management:** Intelligent cache invalidation
+- **Cross-service Communication:** Cache coordination with Song Service
+- **Error Handling:** Comprehensive error management
+- **Authentication:** JWT-based security
 
 ### Development Tools
 - **TypeScript:** Type safety
@@ -380,7 +396,47 @@ npm run lint
 | `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name | `your_cloud_name` |
 | `CLOUDINARY_API_KEY` | Cloudinary API key | `your_api_key` |
 | `CLOUDINARY_API_SECRET` | Cloudinary API secret | `your_api_secret` |
+| `REDIS_HOST` | Redis host | `localhost` |
+| `REDIS_PORT` | Redis port | `6379` |
+| `REDIS_PASSWORD` | Redis password | `your_password` |
+| `CACHE_EXPIRE` | Default cache TTL (seconds) | `1800` |
 | `USER_URL` | User Service URL | `http://localhost:3000` |
+
+## 🔧 Cache Invalidation Strategy
+
+The Admin Service implements intelligent cache invalidation to ensure the Song Service always serves fresh data after content changes.
+
+### Cache Keys Invalidated by Operations
+
+#### Album Operations:
+- **addAlbum** → Invalidates: `albums:all`
+- **deleteAlbum** → Invalidates: `albums:all`, `album:{id}:songs`, `songs:all`
+
+#### Song Operations:
+- **addSong** → Invalidates: `songs:all`, `album:{albumId}:songs`
+- **addSongThumbnail** → Invalidates: `song:{id}`, `songs:all`, `album:{albumId}:songs`
+- **deleteSong** → Invalidates: `song:{id}`, `songs:all`, `album:*:songs`
+
+#### Song Status Control:
+- **toggleSongStatus** → Invalidates: `song:{id}`, `songs:all`, `album:{albumId}:songs`
+- **activateSong/deactivateSong** → Same as toggle
+
+### Implementation Example:
+```typescript
+// After successful song creation
+const cacheKeysToInvalidate = [
+  "songs:all",
+  `album:${data.albumId}:songs`
+];
+
+for (const key of cacheKeysToInvalidate) {
+  await cacheHelper.del(key);
+}
+console.log("🗑️ Invalidated song caches after adding new song");
+```
+
+### Cross-Service Cache Coordination
+The Admin Service connects to the same Redis instance as the Song Service, ensuring immediate cache invalidation when content changes. This maintains data consistency while allowing the Song Service to serve cached data for performance.
 
 ### Database Operations
 

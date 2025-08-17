@@ -10,6 +10,7 @@ import { HTTPSTATUS } from "./config/Https.config.js";
 import { ErrorHandler } from "./middlewares/ErrorHandler.middleware.js";
 import { InitDB } from "./db/index.js";
 import adminRoutes from './routes/admin.route.js';
+import { connectRedis } from "./config/redis.config.js";
 
 
 const app = express();
@@ -57,6 +58,8 @@ app.use(ErrorHandler);
 
 InitDB().then(() => {
   app.listen(Env.PORT, async () => {
+    await connectRedis();
+
     console.log(`Server is running on port ${Env.PORT} in ${Env.NODE_ENV} mode`);
   });
 });

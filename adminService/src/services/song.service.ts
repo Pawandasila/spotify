@@ -23,6 +23,10 @@ export const addSongService = async (songData: NewSong): Promise<Song> => {
       albumId: songData.albumId,
       duration: songData.duration,
       audioUrl: songData.audioUrl,
+      thumbnail: songData.thumbnail,
+      genre: songData.genre,
+      playCount: songData.playCount,
+      isActive: songData.isActive,
     }).returning();
 
     if (!newSong) {

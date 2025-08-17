@@ -5,6 +5,7 @@ import { addSong } from '../controllers/addSong.controller.js';
 import { addSongThumbnail } from '../controllers/addSongThumbnail.controller.js';
 import { isAdmin } from '../middlewares/Shared.middleware.js';
 import { deleteAlbum, deleteSong } from '../controllers/delete.controller.js';
+import { toggleSongStatus, deactivateSong, activateSong } from '../controllers/songStatus.controller.js';
 
 const app = express.Router();
 
@@ -23,5 +24,10 @@ app.patch('/addSongThumbnail', authMiddleware, upload, addSongThumbnail);
 app.delete('/deleteSong/:songId', authMiddleware, deleteSong);
 
 app.delete('/deleteAlbum/:albumId', authMiddleware, deleteAlbum);
+
+// Song status management routes
+app.patch('/song/:id/toggle-status', authMiddleware, toggleSongStatus);
+app.patch('/song/:id/deactivate', authMiddleware, deactivateSong);
+app.patch('/song/:id/activate', authMiddleware, activateSong);
 
 export default app;

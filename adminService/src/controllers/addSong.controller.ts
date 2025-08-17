@@ -5,6 +5,7 @@ import { songSchema } from "../validator/song.validator.js";
 import cloudinary from "../config/clodinary.js";
 import { addSongService } from "../services/song.service.js";
 import { Env } from "../config/env.config.js";
+import { cacheHelper } from "../config/redis.config.js";
 
 export const addSong = AsyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -25,8 +26,13 @@ export const addSong = AsyncHandler(
         size: file.size
       });
 
+      console.log("Raw request body:", req.body);
+      console.log("Parsed song data:", songData);
+      console.log("Genre from request body:", req.body.genre);
+      console.log("Genre from parsed data:", songData.genre);
+
       
-      // Convert buffer to base64 for upload (since we're using memory storage)
+      
       const base64Data = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
       
       const cloudData = await cloudinary.uploader.upload(base64Data, {
@@ -43,9 +49,26 @@ export const addSong = AsyncHandler(
         duration: songData.duration,
         audioUrl: cloudData.secure_url as string,
         thumbnail: null,
+        genre: songData.genre || null, 
+        playCount: 0, 
+        isActive: true, 
       };
 
+      console.log("Data being sent to service:", data);
+
       const result = await addSongService(data);
+
+
+      // Invalidate song-related caches
+      const cacheKeysToInvalidate = [
+        "songs:all",
+        `album:${data.albumId}:songs`
+      ];
+      
+      for (const key of cacheKeysToInvalidate) {
+        await cacheHelper.del(key);
+      }
+      console.log("🗑️ Invalidated song caches after adding new song");
 
       return res.status(HTTPSTATUS.CREATED).json({
         message: "Song added successfully",
@@ -53,23 +76,24 @@ export const addSong = AsyncHandler(
         cloudinaryData: {
           url: cloudData.secure_url,
           public_id: cloudData.public_id,
-          folder: cloudData.folder
-        }
+          folder: cloudData.folder,
+        },
       });
     } catch (cloudinaryError) {
       console.error("Cloudinary upload failed:", cloudinaryError);
-      
+
       let errorMessage = "Unknown error occurred";
       if (cloudinaryError instanceof Error) {
         errorMessage = cloudinaryError.message || cloudinaryError.toString();
-      } else if (typeof cloudinaryError === 'string') {
+      } else if (typeof cloudinaryError === "string") {
         errorMessage = cloudinaryError;
-      } else if (cloudinaryError && typeof cloudinaryError === 'object') {
-        errorMessage = (cloudinaryError as any).error?.message || 
-                     (cloudinaryError as any).message || 
-                     JSON.stringify(cloudinaryError);
+      } else if (cloudinaryError && typeof cloudinaryError === "object") {
+        errorMessage =
+          (cloudinaryError as any).error?.message ||
+          (cloudinaryError as any).message ||
+          JSON.stringify(cloudinaryError);
       }
-      
+
       throw new Error(`Failed to upload audio: ${errorMessage}`);
     }
   }

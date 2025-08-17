@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, date, timestamp, text, integer } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, date, timestamp, text, integer, boolean } from 'drizzle-orm/pg-core';
 
 export const albums = pgTable('albums', {
   id: serial('id').primaryKey(),
@@ -19,6 +19,11 @@ export const songs = pgTable('songs', {
   duration: varchar('duration', { length: 10 }).notNull(),
   audioUrl: varchar('audio_url', { length: 255 }).notNull(),
   createdAt: timestamp('created_at').defaultNow(),
+  
+  // New fields for Song Service compatibility
+  playCount: integer('play_count').default(0),
+  genre: varchar('genre', { length: 100 }),
+  isActive: boolean('is_active').default(true),
 });
 
 export type Album = typeof albums.$inferSelect;

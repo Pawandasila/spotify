@@ -10,6 +10,7 @@ import { HTTPSTATUS } from "./config/Https.config.js";
 import { ErrorHandler } from "./middlewares/ErrorHandler.middleware.js";
 import { waitForDatabase, testDatabaseConnection } from "./db/index.js";
 import songRoutes from './routes/song.route.js';
+import playlistRoutes from './routes/playlist.route.js';
 import { connectRedis, redisClient } from "./config/redis.config.js";
 
 const app = express();
@@ -79,6 +80,7 @@ app.get(
 
 //routes
 app.use(`${BASE_PATH}/v1/songs`, songRoutes);
+app.use(`${BASE_PATH}/v1/playlists`, playlistRoutes);
 
 
 app.use(ErrorHandler);

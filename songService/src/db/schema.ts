@@ -29,25 +29,25 @@ export const songs = pgTable("songs", {
 });
 
 // User playlists table
-// export const playlists = pgTable("playlists", {
-//   id: serial("id").primaryKey(),
-//   userId: varchar("user_id", { length: 255 }).notNull(),
-//   name: varchar("name", { length: 255 }).notNull(),
-//   description: text("description"),
-//   isPublic: boolean("is_public").default(false),
-//   thumbnail: text("thumbnail"),
-//   createdAt: timestamp("created_at").defaultNow(),
-//   updatedAt: timestamp("updated_at").defaultNow(),
-// });
+export const playlists = pgTable("playlists", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  isPublic: boolean("is_public").default(false),
+  thumbnail: text("thumbnail"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
 
 // // Playlist songs junction table
-// export const playlistSongs = pgTable("playlist_songs", {
-//   id: serial("id").primaryKey(),
-//   playlistId: integer("playlist_id").notNull().references(() => playlists.id, { onDelete: "cascade" }),
-//   songId: integer("song_id").notNull().references(() => songs.id, { onDelete: "cascade" }),
-//   position: integer("position").notNull(),
-//   addedAt: timestamp("added_at").defaultNow(),
-// });
+export const playlistSongs = pgTable("playlist_songs", {
+  id: serial("id").primaryKey(),
+  playlistId: integer("playlist_id").notNull().references(() => playlists.id, { onDelete: "cascade" }),
+  songId: integer("song_id").notNull().references(() => songs.id, { onDelete: "cascade" }),
+  position: integer("position").notNull(),
+  addedAt: timestamp("added_at").defaultNow(),
+});
 
 // // User listening history
 // export const listeningHistory = pgTable("listening_history", {
@@ -74,11 +74,11 @@ export type NewAlbum = typeof albums.$inferInsert;
 export type Song = typeof songs.$inferSelect;
 export type NewSong = typeof songs.$inferInsert;
 
-// export type Playlist = typeof playlists.$inferSelect;
-// export type NewPlaylist = typeof playlists.$inferInsert;
+export type Playlist = typeof playlists.$inferSelect;
+export type NewPlaylist = typeof playlists.$inferInsert;
 
-// export type PlaylistSong = typeof playlistSongs.$inferSelect;
-// export type NewPlaylistSong = typeof playlistSongs.$inferInsert;
+export type PlaylistSong = typeof playlistSongs.$inferSelect;
+export type NewPlaylistSong = typeof playlistSongs.$inferInsert;
 
 // export type ListeningHistory = typeof listeningHistory.$inferSelect;
 // export type NewListeningHistory = typeof listeningHistory.$inferInsert;

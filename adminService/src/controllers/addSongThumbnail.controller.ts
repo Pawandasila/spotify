@@ -24,11 +24,6 @@ export const addSongThumbnail = AsyncHandler(
     const { songId } = thumbnailSchema.parse(req.body);
 
     try {
-      console.log("Thumbnail file details:", {
-        originalname: file.originalname,
-        mimetype: file.mimetype,
-        size: file.size
-      });
 
       const base64Data = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
       

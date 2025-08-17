@@ -19,19 +19,7 @@ export const addSong = AsyncHandler(
 
     const songData = songSchema.parse(req.body);
 
-    try {
-      console.log("Audio file details:", {
-        originalname: file.originalname,
-        mimetype: file.mimetype,
-        size: file.size
-      });
-
-      console.log("Raw request body:", req.body);
-      console.log("Parsed song data:", songData);
-      console.log("Genre from request body:", req.body.genre);
-      console.log("Genre from parsed data:", songData.genre);
-
-      
+    try {     
       
       const base64Data = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
       
@@ -54,7 +42,6 @@ export const addSong = AsyncHandler(
         isActive: true, 
       };
 
-      console.log("Data being sent to service:", data);
 
       const result = await addSongService(data);
 
@@ -68,7 +55,6 @@ export const addSong = AsyncHandler(
       for (const key of cacheKeysToInvalidate) {
         await cacheHelper.del(key);
       }
-      console.log("🗑️ Invalidated song caches after adding new song");
 
       return res.status(HTTPSTATUS.CREATED).json({
         message: "Song added successfully",

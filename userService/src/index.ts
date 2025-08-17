@@ -57,7 +57,7 @@ app.use(ErrorHandler);
 const initializeApp = async () => {
   try {
     await DatabaseConnect();
-    console.log(`Database connected in ${Env.NODE_ENV} mode`);
+    console.log(`Database connected in ${Env.NODE_ENV} mode.`);
   } catch (error) {
     console.error('Failed to initialize app:', error);
   }

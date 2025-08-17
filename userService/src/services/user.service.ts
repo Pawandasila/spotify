@@ -77,3 +77,77 @@ export const loginService = async (body: LoginService) => {
     throw error
   }
 };
+
+export const updateUserService = async (userId: string, updatedData: any) => {
+  try {
+    const user = await UserModel.findById(userId);
+    if (!user) throw new NotFoundException("User not found");
+
+    // Update user fields
+    const updatedUser = await UserModel.findByIdAndUpdate(userId, updatedData, { new: true });
+    if (!updatedUser) throw new NotFoundException("User not found");
+
+    return updatedUser.ommitPassword();
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const addPlaylistToUser = async (userId: string, playlistId: string) => {
+  try {
+    const user = await UserModel.findById(userId);
+    if (!user) throw new NotFoundException("User not found");
+
+    // Check if playlist already exists in user's playlist array
+    if (user.playlist.includes(playlistId)) {
+      throw new UnauthorizedException("Playlist already exists in user's collection");
+    }
+
+    // Add playlist ID to user's playlist array
+    const updatedUser = await UserModel.findByIdAndUpdate(
+      userId,
+      { $push: { playlist: playlistId } },
+      { new: true }
+    );
+
+    if (!updatedUser) throw new NotFoundException("User not found");
+
+    return updatedUser.ommitPassword();
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const removePlaylistFromUser = async (userId: string, playlistId: string) => {
+  try {
+    const user = await UserModel.findById(userId);
+    if (!user) throw new NotFoundException("User not found");
+
+    // Remove playlist ID from user's playlist array
+    const updatedUser = await UserModel.findByIdAndUpdate(
+      userId,
+      { $pull: { playlist: playlistId } },
+      { new: true }
+    );
+
+    if (!updatedUser) throw new NotFoundException("User not found");
+
+    return updatedUser.ommitPassword();
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getUserPlaylists = async (userId: string) => {
+  try {
+    const user = await UserModel.findById(userId);
+    if (!user) throw new NotFoundException("User not found");
+
+    return {
+      userId: user._id,
+      playlists: user.playlist
+    };
+  } catch (error) {
+    throw error;
+  }
+};
